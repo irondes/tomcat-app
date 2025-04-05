@@ -16,7 +16,7 @@ RUN wget https://sourceforge.net/projects/jr-community-installers/files/Server/T
 
 
 # Copia a config e instala o JasperReports
-RUN cd $JRS_DIR/jasperreports-server-cp-${JRS_VERSION}-bin/buildomatic && \
+RUN cd $JRS_DIR/buildomatic && \
     ./js-install-ce.sh
 
 EXPOSE 8080
