@@ -2,30 +2,35 @@ version: "3.8"
 
 services:
   mysql:
-    image: mysql:8
-    container_name: mysql
+    image: mysql:8.0
+    container_name: jrs-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: jasperserver
-      MYSQL_USER: jasper
-      MYSQL_PASSWORD: jasper
+      MYSQL_USER: jasperadmin
+      MYSQL_PASSWORD: jasperadmin
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
 
-  tomcat-jrs:
-    build: .
-    container_name: tomcat-jrs
+  jasperserver:
+    build: ./jasperserver
+    container_name: jrs-tomcat
     depends_on:
       - mysql
     ports:
       - "8888:8080"
     environment:
       DB_HOST: mysql
-      DB_USER: jasper
-      DB_PASS: jasper
+      DB_PORT: 3306
+      DB_NAME: jasperserver
+      DB_USER: jasperadmin
+      DB_PASSWORD: jasperadmin
     volumes:
-      - ./default_master.properties:/opt/jasperserver/jasperreports-server-cp-8.2.0-bin/buildomatic/default_master.properties
+      - jrs_webapps:/usr/local/tomcat/webapps
 
 volumes:
   mysql_data:
+  jrs_webapps:
