@@ -19,6 +19,6 @@ RUN wget https://sourceforge.net/projects/jr-community-installers/files/Server/T
 RUN cd $JRS_DIR/buildomatic && \
     ./js-install-ce.sh
 
-EXPOSE 8080
+EXPOSE 8888
 
 CMD ["catalina.sh", "run"]
