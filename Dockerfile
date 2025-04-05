@@ -1,20 +1,37 @@
-FROM tomcat:11.0.5-jdk21
+FROM tomcat:9.0-jdk17
 
-# Instala dependências
-RUN apt-get update && apt-get install -y unzip wget && rm -rf /var/lib/apt/lists/*
+# Variáveis
+ENV JRS_VERSION=8.2.0 \
+    JRS_DIR=/opt/jasperserver \
+    CATALINA_HOME=/usr/local/tomcat
 
-# Cria diretório temporário
-WORKDIR /tmp
+# Instalar dependências
+RUN apt update && apt install -y \
+    unzip \
+    wget \
+    default-jdk \
+    nano \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
 
-# Baixa o JasperReports Server Community Edition
-RUN wget -O jrs.zip https://sourceforge.net/projects/jr-community-installers/files/Server/TIB_js-jrs-cp_8.2.0_bin.zip/download
+# Criar diretório de trabalho
+WORKDIR /opt
 
-# Extrai o zip
-RUN unzip jrs.zip && \
-    cp -r TIB_js-jrs-cp_8.2.0_bin/jasperreports-server-cp-8.2.0-bin/buildomatic/sample-application-jdbc/webapps/jasperserver.war /usr/local/tomcat/webapps/ && \
-    rm -rf /tmp/*
+# Baixar e extrair JasperReports
+RUN wget https://sourceforge.net/projects/jr-community-installers/files/Server/TIB_js-jrs-cp_${JRS_VERSION}_bin.zip/download -O jrs.zip && \
+    unzip jrs.zip && \
+    mv TIB_js-jrs-cp_${JRS_VERSION}_bin $JRS_DIR && \
+    rm jrs.zip
 
-# Copia config de usuários do Tomcat
-COPY tomcat-users.xml /usr/local/tomcat/conf/
+# Copiar o arquivo de config do banco
+COPY default_master.properties $JRS_DIR/jasperreports-server-cp-${JRS_VERSION}-bin/buildomatic/default_master.properties
 
+# Rodar instalação
+RUN cd $JRS_DIR/jasperreports-server-cp-${JRS_VERSION}-bin/buildomatic && \
+    ./js-install-ce.sh
+
+# Expor porta
 EXPOSE 8080
+
+# Iniciar o Tomcat
+CMD ["catalina.sh", "run"]
