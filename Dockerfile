@@ -45,7 +45,7 @@ RUN ./js-install-ce.sh || \
      cp /tmp/jasper/jasperserver.war $CATALINA_HOME/webapps/ && \
      unzip $CATALINA_HOME/webapps/jasperserver.war -d $CATALINA_HOME/webapps/jasperserver/)
 
-# Permissões
+# Configurações finais
 RUN chown -R tomcat:tomcat $CATALINA_HOME && \
     chmod -R 755 $CATALINA_HOME && \
     chmod +x $CATALINA_HOME/bin/*.sh
@@ -55,5 +55,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5m \
   CMD curl -f http://localhost:8080/jasperserver/login.html || exit 1
 
 EXPOSE 8080
+
+# Correção crítica - use caminho absoluto
 USER tomcat
-CMD ["bin/catalina.sh", "run"]
+WORKDIR $CATALINA_HOME
+CMD ["/opt/tomcat/bin/catalina.sh", "run"]
