@@ -30,11 +30,12 @@ services:
       MYSQL_PASSWORD: J@sp3r2024
     volumes:
       - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 10s
-      retries: 10
+  healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/jasperserver/login.html"]
+        interval: 30s
+        timeout: 10s
+        start_period: 5m
+        retries: 3
 
 volumes:
   jasper_data:
