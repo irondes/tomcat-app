@@ -51,7 +51,11 @@ RUN chown -R tomcat:tomcat $CATALINA_HOME && \
     chmod +x $CATALINA_HOME/bin/*.sh
 
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5m \
+# Instale curl para healthcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Healthcheck específico para JasperServer
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5m \
   CMD curl -f http://localhost:8080/jasperserver/login.html || exit 1
 
 EXPOSE 8080
