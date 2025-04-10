@@ -1,24 +1,59 @@
-FROM tomcat:9.0-jdk17
+# Base image
+FROM ubuntu:22.04
 
-ENV JRS_VERSION=8.2.0 \
-    JRS_DIR=/opt/jasperserver \
-    CATALINA_HOME=/usr/local/tomcat
+# Variáveis de ambiente
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=America/Sao_Paulo \
+    CATALINA_HOME=/opt/tomcat \
+    CATALINA_BASE=/opt/tomcat \
+    JAVA_HOME=/usr/lib/jvm/default-java \
+    CATALINA_OPTS="-Xms1024M -Xmx2048M -server -XX:+UseParallelGC" \
+    JASPER_VERSION=8.2.0
 
-WORKDIR /opt
+# Instalação de dependências
+RUN apt-get update && apt-get install -y \
+    default-jdk \
+    wget \
+    curl \
+    unzip \
+    gettext-base \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instala dependências
-RUN apt update && apt install -y unzip wget default-jdk nano && rm -rf /var/lib/apt/lists/*
+# Configuração do Tomcat
+RUN groupadd -r tomcat && \
+    useradd -r -s /bin/false -g tomcat -d $CATALINA_HOME tomcat && \
+    mkdir -p $CATALINA_HOME/{webapps,temp,logs,conf}
 
-RUN wget https://sourceforge.net/projects/jr-community-installers/files/Server/TIB_js-jrs-cp_${JRS_VERSION}_bin.zip/download -O jrs.zip && \
-    unzip jrs.zip && \
-    mv $(find . -type d -name "jasperreports-server-cp-${JRS_VERSION}-bin") $JRS_DIR && \
-    rm jrs.zip
+# Download e instalação do Tomcat 9.0.102
+RUN wget -q https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.102/bin/apache-tomcat-9.0.102.tar.gz -P /tmp && \
+    tar -xzf /tmp/apache-tomcat-9.0.102.tar.gz -C $CATALINA_HOME --strip-components=1 && \
+    rm /tmp/apache-tomcat-9.0.102.tar.gz
 
+# Download do JasperReports
+RUN wget -q https://sourceforge.net/projects/jr-community-installers/files/Server/TIB_js-jrs-cp_${JASPER_VERSION}_bin.zip -O /tmp/jasper.zip && \
+    unzip /tmp/jasper.zip -d /tmp && \
+    mv /tmp/jasperreports-server-cp-${JASPER_VERSION}-bin /tmp/jasper && \
+    rm /tmp/jasper.zip
 
-# Copia a config e instala o JasperReports
-RUN cd $JRS_DIR/buildomatic && \
-    ./js-install-ce.sh
+# Configuração da instalação
+WORKDIR /tmp/jasper/buildomatic
+COPY default_master.properties .
 
-EXPOSE 8888
+# Instalação
+RUN ./js-install-ce.sh || \
+    (echo "Fallback: Deploy manual" && \
+     cp /tmp/jasper/jasperserver.war $CATALINA_HOME/webapps/ && \
+     unzip $CATALINA_HOME/webapps/jasperserver.war -d $CATALINA_HOME/webapps/jasperserver/)
 
-CMD ["catalina.sh", "run"]
+# Permissões
+RUN chown -R tomcat:tomcat $CATALINA_HOME && \
+    chmod -R 755 $CATALINA_HOME && \
+    chmod +x $CATALINA_HOME/bin/*.sh
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5m \
+  CMD curl -f http://localhost:8080/jasperserver/login.html || exit 1
+
+EXPOSE 8080
+USER tomcat
+CMD ["bin/catalina.sh", "run"]
