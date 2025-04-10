@@ -1,36 +1,42 @@
-version: "3.8"
+version: '3.8'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: jrs-mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: jasperserver
-      MYSQL_USER: jasperadmin
-      MYSQL_PASSWORD: jasperadmin
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-
   jasperserver:
-    build: ./jasperserver
-    container_name: jrs-tomcat
-    depends_on:
-      - mysql
+    build: .
     ports:
-      - "8888:8080"
+      - "8080:8080"
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_NAME: jasperserver
-      DB_USER: jasperadmin
-      DB_PASSWORD: jasperadmin
+      - DB_HOST=db
+      - DB_USER=jasperuser
+      - DB_PASSWORD=J@sp3r2024
+      - JAVA_OPTS=-Xms1024M -Xmx2048M
     volumes:
-      - jrs_webapps:/usr/local/tomcat/webapps
+      - jasper_data:/opt/tomcat/webapps/jasperserver
+      - tomcat_logs:/opt/tomcat/logs
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: jasperdb
+      MYSQL_USER: jasperuser
+      MYSQL_PASSWORD: J@sp3r2024
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
 
 volumes:
-  mysql_data:
-  jrs_webapps:
+  jasper_data:
+  tomcat_logs:
+  db_data:
